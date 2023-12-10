@@ -27,24 +27,54 @@ typedef union {
   instruction_word instruction;
 } word;
 
+number AC;
+number MQ;
+address PC;
+opcode IR;
+instruction IBR;
+word MBR;
+address MAR;
+
 number abs_num(number number) {
   if(number.val < 0) {
     number.val *= -1;
   }
   return number;
 }
+void mul(number an, number bn) {
+  uint64_t a = an.val;
+  uint64_t b = bn.val;
+
+  uint64_t p = a >> 20;
+  uint64_t q = a & 0xFFFFF;
+
+  uint64_t r = b >> 20;
+  uint64_t s = b & 0xFFFFF;
+
+  uint64_t u = p * r;
+  uint64_t v = (q - p) * (s - r);
+  uint64_t w = q * s;
+  uint64_t x = u + w - v;
+
+  AC.val = u;
+
+  uint64_t y = x >> 20;
+  uint64_t z = x & 0xFFFFF;
+
+  uint64_t c = w >> 20;
+  uint64_t d = w & 0xFFFFF;
+
+  uint64_t e = c + z;
+  uint64_t f = e >> 20;
+  uint64_t g = e & 0xFFFFF;
+
+  AC.val += y + f;
+  MQ.val = d + (g << 20);
+}
+
 int main() {
   word memory[2 << 12] = {0};
 
-  opcode IR;
-  instruction IBR;
-  word MBR;
-  address MAR;
-
-  number AC;
-  number MQ;
-
-  address PC;
   PC.val = 0;
 
   uint8_t is_next_in_IBR = 0;
@@ -100,7 +130,7 @@ int main() {
         AC = MQ;
         break;
       case 11:
-      //TODO: implement multiplication
+        mul(AC, memory[MAR.val].number);
         break;
       case 12:
         MQ.val = AC.val / memory[MAR.val].number.val;
